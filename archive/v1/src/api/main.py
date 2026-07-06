@@ -17,7 +17,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from src.config.settings import get_settings
 from src.config.domains import get_domain_config
-from src.api.routers import pose, stream, health, auth
+from src.api.routers import pose, stream, health, auth, models_training
 from src.api.middleware.auth import AuthMiddleware
 from src.api.middleware.rate_limit import RateLimitMiddleware
 from src.api.dependencies import get_pose_service, get_stream_service, get_hardware_service
@@ -99,6 +99,11 @@ async def start_background_tasks(app: FastAPI):
         await pose_service.start()
         logger.info("Pose service started")
         
+        # Start stream service
+        if hasattr(app.state, 'stream_service'):
+            await app.state.stream_service.start()
+            logger.info("Stream service started")
+        
         # Start pose streaming if enabled
         if settings.enable_real_time_processing:
             pose_stream_handler = app.state.pose_stream_handler
@@ -123,7 +128,7 @@ async def cleanup_services(app: FastAPI):
         
         # Cleanup services
         if hasattr(app.state, 'stream_service'):
-            await app.state.stream_service.shutdown()
+            await app.state.stream_service.stop()
         
         if hasattr(app.state, 'pose_service'):
             await app.state.pose_service.stop()
@@ -267,6 +272,12 @@ app.include_router(
     auth.router,
     prefix=f"{settings.api_prefix}",
     tags=["Authentication"]
+)
+
+app.include_router(
+    models_training.router,
+    prefix=f"{settings.api_prefix}",
+    tags=["Models & Training"]
 )
 
 

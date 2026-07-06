@@ -88,10 +88,17 @@ export class ApiService {
 
       // Handle errors
       if (!processedResponse.ok) {
-        const error = await processedResponse.json().catch(() => ({
+        const errorBody = await processedResponse.json().catch(() => ({
           message: `HTTP ${processedResponse.status}: ${processedResponse.statusText}`
         }));
-        throw new Error(error.message || error.detail || 'Request failed');
+        
+        // Extract message from various possible error formats
+        let errorMsg = 'Request failed';
+        if (errorBody.error && errorBody.error.message) errorMsg = errorBody.error.message;
+        else if (errorBody.message) errorMsg = errorBody.message;
+        else if (errorBody.detail) errorMsg = errorBody.detail;
+        
+        throw new Error(errorMsg);
       }
 
       // Parse JSON response

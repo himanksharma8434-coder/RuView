@@ -397,6 +397,16 @@ class SensingWebSocketServer:
             },
             "signal_field": signal_field,
         }
+
+        # Inject mock persons if simulated so the Observatory can render figures
+        if self.source == "simulated" or True: # Always inject for demo purposes right now since hardware is mock
+            try:
+                from src.testing.mock_pose_generator import generate_mock_poses
+                # Generate 2 persons to match the demo
+                msg["persons"] = generate_mock_poses(count=2)
+            except ImportError:
+                pass
+
         return json.dumps(msg)
 
     async def _handler(self, websocket):

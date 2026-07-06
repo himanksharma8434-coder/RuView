@@ -307,24 +307,16 @@ class Settings(BaseSettings):
     
     def get_cors_config(self) -> Dict[str, Any]:
         """Get CORS configuration."""
-        if self.is_development:
-            return {
-                "allow_origins": ["*"],
-                "allow_credentials": True,
-                "allow_methods": ["*"],
-                "allow_headers": ["*"],
-            }
-        
         return {
-            "allow_origins": self.cors_origins,
-            "allow_credentials": True,
-            "allow_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            "allow_headers": ["Authorization", "Content-Type"],
+            "allow_origins": ["*"],
+            "allow_credentials": False,
+            "allow_methods": ["*"],
+            "allow_headers": ["*"],
         }
     
     def get_logging_config(self) -> Dict[str, Any]:
         """Get logging configuration."""
-        config = {
+        config: Dict[str, Any] = {
             "version": 1,
             "disable_existing_loggers": False,
             "formatters": {

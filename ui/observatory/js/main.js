@@ -448,7 +448,11 @@ class Observatory {
 
     const tryNext = (i) => {
       if (i >= unique.length) {
-        console.log('[Observatory] No sensing server detected, using demo mode');
+        console.log('[Observatory] No HTTP sensing server detected, trying default local WebSocket...');
+        const defaultWsUrl = 'ws://localhost:8765/ws/sensing';
+        this.settings.dataSource = 'ws';
+        this.settings.wsUrl = defaultWsUrl;
+        this._connectWS(defaultWsUrl);
         return;
       }
       const base = unique[i];

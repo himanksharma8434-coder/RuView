@@ -3,12 +3,22 @@
 // Callers (e.g. viz.html) usually pass an explicit `url` derived from
 // `buildSensingWsUrl()` so HTTP/WS port pairings are handled centrally.
 
+const SENSING_WS_PORT_BY_HTTP_PORT = {
+  '3000': '8765',
+  '8080': '8765',
+};
+
 function _defaultWsUrl() {
   if (typeof window === 'undefined' || !window.location) {
     return 'ws://localhost:8765/ws/sensing';
   }
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${protocol}//${window.location.host}/ws/sensing`;
+  const host = window.location.host;
+  const hostname = window.location.hostname || 'localhost';
+  const port = window.location.port || '';
+  const wsPort = SENSING_WS_PORT_BY_HTTP_PORT[port];
+  const wsHost = wsPort ? `${hostname}:${wsPort}` : host;
+  return `${protocol}//${wsHost}/ws/sensing`;
 }
 
 export class WebSocketClient {

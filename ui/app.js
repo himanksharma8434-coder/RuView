@@ -292,6 +292,18 @@ class WiFiDensePoseApp {
   // Register service worker for offline capability
   registerServiceWorker() {
     if ('serviceWorker' in navigator) {
+      // Disable service worker in development to avoid caching config/script changes
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          for (let registration of registrations) {
+            registration.unregister().then(success => {
+              if (success) console.info('Successfully unregistered service worker for development');
+            });
+          }
+        });
+        return;
+      }
+
       navigator.serviceWorker.register('./sw.js').then(reg => {
         console.info('Service worker registered:', reg.scope);
       }).catch(err => {

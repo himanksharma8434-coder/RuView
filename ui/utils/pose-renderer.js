@@ -166,11 +166,115 @@ export class PoseRenderer {
   clearCanvas() {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     
-    // Optional: Add background
-    if (this.config.backgroundColor) {
-      this.ctx.fillStyle = this.config.backgroundColor;
-      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    // Draw room background
+    this.renderRoomBackground();
+  }
+
+  // Render a top-down room layout so it looks like viewing through walls
+  renderRoomBackground() {
+    const w = this.canvas.width;
+    const h = this.canvas.height;
+    const ctx = this.ctx;
+
+    // --- Dark floor ---
+    ctx.fillStyle = '#0a0e17';
+    ctx.fillRect(0, 0, w, h);
+
+    // --- Floor grid ---
+    const gridSpacing = Math.max(30, w / 20);
+    ctx.strokeStyle = 'rgba(40, 60, 90, 0.25)';
+    ctx.lineWidth = 0.5;
+    for (let x = gridSpacing; x < w; x += gridSpacing) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
     }
+    for (let y = gridSpacing; y < h; y += gridSpacing) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+
+    // --- Room walls (thick border with glow) ---
+    const wallPad = 12;
+    ctx.strokeStyle = 'rgba(0, 180, 255, 0.35)';
+    ctx.lineWidth = 3;
+    ctx.shadowColor = 'rgba(0, 180, 255, 0.15)';
+    ctx.shadowBlur = 8;
+    ctx.strokeRect(wallPad, wallPad, w - wallPad * 2, h - wallPad * 2);
+    ctx.shadowBlur = 0;
+
+    // --- Door opening (gap in bottom wall) ---
+    const doorW = w * 0.12;
+    const doorX = w * 0.15;
+    ctx.fillStyle = '#0a0e17';
+    ctx.fillRect(doorX, h - wallPad - 2, doorW, 7);
+    // Door swing arc
+    ctx.strokeStyle = 'rgba(0, 180, 255, 0.2)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(doorX, h - wallPad, doorW, -Math.PI / 2, 0);
+    ctx.stroke();
+    // Door label
+    ctx.fillStyle = 'rgba(100, 160, 220, 0.4)';
+    ctx.font = '9px Arial';
+    ctx.fillText('DOOR', doorX + 2, h - wallPad - 6);
+
+    // --- Furniture: Sofa (bottom-right) ---
+    const sofaX = w * 0.70, sofaY = h * 0.78;
+    const sofaW = w * 0.22, sofaH = h * 0.08;
+    ctx.fillStyle = 'rgba(50, 65, 90, 0.35)';
+    ctx.strokeStyle = 'rgba(80, 110, 160, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.fillRect(sofaX, sofaY, sofaW, sofaH);
+    ctx.strokeRect(sofaX, sofaY, sofaW, sofaH);
+    // Sofa back
+    ctx.fillStyle = 'rgba(50, 65, 90, 0.5)';
+    ctx.fillRect(sofaX, sofaY + sofaH, sofaW, sofaH * 0.35);
+    ctx.fillStyle = 'rgba(100, 140, 190, 0.35)';
+    ctx.font = '8px Arial';
+    ctx.fillText('SOFA', sofaX + sofaW / 2 - 12, sofaY + sofaH / 2 + 3);
+
+    // --- Furniture: Table (center) ---
+    const tblX = w * 0.40, tblY = h * 0.42;
+    const tblW = w * 0.18, tblH = h * 0.12;
+    ctx.fillStyle = 'rgba(60, 50, 40, 0.3)';
+    ctx.strokeStyle = 'rgba(120, 100, 80, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.fillRect(tblX, tblY, tblW, tblH);
+    ctx.strokeRect(tblX, tblY, tblW, tblH);
+    ctx.fillStyle = 'rgba(140, 120, 90, 0.35)';
+    ctx.font = '8px Arial';
+    ctx.fillText('TABLE', tblX + tblW / 2 - 14, tblY + tblH / 2 + 3);
+
+    // --- WiFi Router icon (top-right corner) ---
+    const rxX = w - 50, rxY = 30;
+    ctx.fillStyle = 'rgba(0, 255, 180, 0.6)';
+    ctx.beginPath(); ctx.arc(rxX, rxY, 4, 0, Math.PI * 2); ctx.fill();
+    // Signal arcs
+    for (let i = 1; i <= 3; i++) {
+      ctx.strokeStyle = `rgba(0, 255, 180, ${0.35 - i * 0.08})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(rxX, rxY, 8 + i * 7, -Math.PI * 0.7, -Math.PI * 0.3);
+      ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(0, 255, 180, 0.45)';
+    ctx.font = '8px Arial';
+    ctx.fillText('ROUTER', rxX - 18, rxY + 30);
+
+    // --- Room label ---
+    ctx.fillStyle = 'rgba(80, 120, 180, 0.25)';
+    ctx.font = '11px Arial';
+    ctx.fillText('ZONE 1 — LIVING ROOM', wallPad + 8, wallPad + 16);
+
+    // --- Scale indicator (bottom-left) ---
+    const scaleY2 = h - wallPad - 15;
+    const scaleLen = w * 0.12;
+    ctx.strokeStyle = 'rgba(100, 140, 200, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(wallPad + 8, scaleY2); ctx.lineTo(wallPad + 8 + scaleLen, scaleY2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(wallPad + 8, scaleY2 - 3); ctx.lineTo(wallPad + 8, scaleY2 + 3); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(wallPad + 8 + scaleLen, scaleY2 - 3); ctx.lineTo(wallPad + 8 + scaleLen, scaleY2 + 3); ctx.stroke();
+    ctx.fillStyle = 'rgba(100, 140, 200, 0.35)';
+    ctx.font = '8px Arial';
+    ctx.fillText('~3m', wallPad + 8 + scaleLen / 2 - 8, scaleY2 - 6);
   }
 
   // Skeleton rendering mode

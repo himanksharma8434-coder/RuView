@@ -15,6 +15,17 @@ from fastapi import WebSocket, WebSocketDisconnect
 logger = logging.getLogger(__name__)
 
 
+def make_json_serializable(data: Any) -> Any:
+    """Recursively convert datetime, set, etc. to JSON serializable formats."""
+    if isinstance(data, datetime):
+        return data.isoformat()
+    elif isinstance(data, dict):
+        return {k: make_json_serializable(v) for k, v in data.items()}
+    elif isinstance(data, (list, tuple, set)):
+        return [make_json_serializable(item) for item in data]
+    return data
+
+
 class WebSocketConnection:
     """Represents a WebSocket connection with metadata."""
     
@@ -39,7 +50,8 @@ class WebSocketConnection:
     async def send_json(self, data: Dict[str, Any]):
         """Send JSON data to client."""
         try:
-            await self.websocket.send_json(data)
+            serializable_data = make_json_serializable(data)
+            await self.websocket.send_json(serializable_data)
             self.message_count += 1
         except Exception as e:
             logger.error(f"Error sending to client {self.client_id}: {e}")
@@ -131,6 +143,7 @@ class ConnectionManager:
     ) -> str:
         """Register a new WebSocket connection."""
         client_id = str(uuid.uuid4())
+        print(f"[CM-DEBUG] Connect on manager {id(self)}: client {client_id}, stream_type {stream_type}, zone_ids {zone_ids}")
         
         try:
             # Create connection object
@@ -156,6 +169,7 @@ class ConnectionManager:
             self.metrics["active_connections"] = len(self.connections)
             
             logger.info(f"WebSocket client {client_id} connected for {stream_type}")
+            print(f"[CM-DEBUG] Manager {id(self)} now has connections: {list(self.connections.keys())}")
             
             return client_id
             
@@ -235,6 +249,8 @@ class ConnectionManager:
         **filters
     ) -> int:
         """Broadcast data to matching clients."""
+        if stream_type == "pose":
+            print(f"[CM-DEBUG] Broadcast on manager {id(self)}: active connections {list(self.connections.keys())}, active clients: {sum(1 for c in self.connections.values() if c.is_active)}")
         sent_count = 0
         failed_clients = []
         
